@@ -38,15 +38,14 @@ typename List<T>::ListIterator List<T>::end() const {
 template <typename T>
 void List<T>::_destroy() {
   /// @todo Graded in MP3.1
-  ListNode * tmp = head_;
-  ListNode * tmp2 = tmp;
-  while (tmp != NULL) {
-    tmp2 = tmp2->next;
-    delete tmp;
-    tmp = tmp2;
+  ListNode* temp;
+  while (head_) {
+    temp = head_;
+    head_ = head_->next;
+    delete temp;
   }
-  tmp = NULL;
-  tmp2 = NULL;
+  head_ = tail_ = temp = nullptr;
+  length_ = 0;
 }
 
 /**
@@ -58,17 +57,12 @@ void List<T>::_destroy() {
 template <typename T>
 void List<T>::insertFront(T const & ndata) {
   /// @todo Graded in MP3.1
-  ListNode * newNode = new ListNode(ndata);
-  if (head_ != NULL) {
-    newNode->next = head_;
-    newNode->prev = NULL;
-    head_->prev = newNode;
-    head_ = newNode;
+  if (head_) {
+    head_->prev = new ListNode(ndata);
+    head_->prev->next = head_;
+    head_ = head_->prev;
   } else {
-    head_ = newNode;
-    tail_ = newNode;
-    newNode->next = NULL;
-    newNode->prev = NULL;
+    head_ = tail_ = new ListNode(ndata); 
   }
   length_++;
 }
@@ -82,19 +76,13 @@ void List<T>::insertFront(T const & ndata) {
 template <typename T>
 void List<T>::insertBack(const T & ndata) {
   /// @todo Graded in MP3.1
-  ListNode * NewNode = new ListNode(ndata);
-  if (tail_ != NULL) {
-    tail_->next = NewNode;
-    NewNode->next = NULL;
-    NewNode->prev = tail_;
-    tail_ = NewNode;
+  if (tail_) {
+    tail_->next = new ListNode(ndata);
+    tail_->next->prev = tail_;
+    tail_ = tail_->next;
   } else {
-    tail_ = NewNode;
-    head_ = NewNode;
-    tail_->next = NULL;
-    tail_->prev = NULL;
+    head_ = tail_ = new ListNode(ndata);
   }
-
   length_++;
 }
 
@@ -118,19 +106,17 @@ void List<T>::insertBack(const T & ndata) {
 template <typename T>
 typename List<T>::ListNode * List<T>::split(ListNode * start, int splitPoint) {
   /// @todo Graded in MP3.1
-
-  ListNode * curr = start;
-    for (int i = 0; i < splitPoint && curr != NULL; i++) {
-      curr = curr->next;
+  ListNode* new_head = start; 
+  for (int i = 0; i < splitPoint && new_head; i++) {
+    new_head = new_head->next;
+  }
+  if (new_head) {
+    if (new_head->prev) {
+      new_head->prev->next = nullptr;
     }
-
-    if (curr != NULL && curr->prev != NULL) {
-
-      curr->prev->next = NULL;
-      curr->prev = NULL;
-    }
-
-    return curr;
+    new_head->prev = nullptr;
+  }
+  return new_head;
 }
 
 /**
@@ -146,45 +132,41 @@ typename List<T>::ListNode * List<T>::split(ListNode * start, int splitPoint) {
 template <typename T>
 void List<T>::tripleRotate() {
   // @todo Graded in MP3.1
-  ListNode * first = head_;
-  ListNode * second = head_->next;
-  ListNode * third = second->next;
-  ListNode * tmp_tail;
-  int n;
-  if (length_ % 3 == 0) {
-    n = length_/3;
-  } else {
-    n = (int)(length_/3);
-  }
-  if (n < 1) {
-    return;
-  }
-  for (int i = 0; i < n; i++) {
+  ListNode* cur1 = head_;
+  ListNode* cur2 = head_; 
+  for (int i = 0; i < length_ / 3; i++) {
     if (i == 0) {
-      first->next = third->next;
-      third->next = first;
-      first->prev = third;
-      second->prev = nullptr;
-      head_ = second;
-      tmp_tail = first;
-    } else {
-      first = tmp_tail->next;
-      second = tmp_tail->next->next;
-      third = tmp_tail->next->next->next;
-      if (third->next != nullptr) {
-        first->next = third->next;
-      } else {
-        first->next = nullptr;
+      for (int j = 1; j < 3; j++) {
+        cur2 = cur2->next;
       }
-      third->next = first;
-      first->prev = third;
-      second->prev = tmp_tail;
-      tmp_tail->next = second;
-      tmp_tail = first;
+    } else {
+      for (int j = 0; j < 3; j++) {
+        if (j == 1) {
+          cur1 = cur2;
+        }
+        cur2 = cur2->next;
+      }
     }
+    if (i == 0) {
+      head_ = cur1->next;
+    }
+    if (i == length_ / 3 - 1) {
+      tail_ = cur1;
+    }
+    if (cur1->prev) {
+      cur1->prev->next = cur1->next;
+    }
+    if (cur2->next) {
+      cur2->next->prev = cur1;
+    }
+    cur1->next->prev = cur1->prev;
+    cur1->next = cur2->next;
+    cur1->prev = cur2;
+    cur2->next = cur1;
+    cur2 = cur1;
   }
+  cur1 = cur2 = nullptr;
 }
-
 
 /**
  * Reverses the current List.
@@ -208,42 +190,30 @@ void List<T>::reverse() {
 template <typename T>
 void List<T>::reverse(ListNode *& startPoint, ListNode *& endPoint) {
   /// @todo Graded in MP3.2
-  if (startPoint == endPoint || startPoint == NULL || endPoint == NULL) {
-    return;
+  ListNode* cur = startPoint;
+  while (true) {
+    ListNode* temp = cur->next;
+    cur->next = cur->prev;
+    cur->prev = temp;
+    if (cur == endPoint) {
+      break;
+    }
+    cur = cur->prev;
   }
-  ListNode * tmp;
-  ListNode * current = startPoint;
-  ListNode * start_prev = startPoint->prev;
-  ListNode * end_next = endPoint->next;
-  ListNode * initial_start = startPoint;
-  ListNode * initial_end = endPoint;
-
-  while (current != end_next) {
-    tmp = current->prev;
-    current->prev = current->next;
-    current->next = tmp;
-    current = current->prev;
-  }  
-
-  initial_end->prev = start_prev;
-  initial_start->next = end_next;
-
-  if (start_prev != NULL) {
-    start_prev->next = initial_end;
-  } 
-
-  if (end_next != NULL) {
-    end_next->prev = initial_start;
+  ListNode* temp = startPoint;
+  startPoint = endPoint;
+  endPoint = temp;
+  ListNode* temp1 = endPoint->next;
+  ListNode* temp2 = startPoint->prev;
+  startPoint->prev = temp1;
+  endPoint->next = temp2;
+  if (temp1) {
+    temp1->next = startPoint;
+    startPoint = head_;
   }
-
-  startPoint = initial_end;
-  endPoint = initial_start;
-
-  if (head_ == initial_start) {
-    head_ = initial_end;
-  }
-  if (tail_ == initial_end) {
-    tail_ = initial_start; 
+  if (temp2) {
+    temp2->prev = endPoint;
+    endPoint = tail_;
   }
 }
 
@@ -256,33 +226,32 @@ void List<T>::reverse(ListNode *& startPoint, ListNode *& endPoint) {
 template <typename T>
 void List<T>::reverseNth(int n) {
   /// @todo Graded in MP3.2
-  if (n >= length_) {
-    reverse(head_, tail_);
-    return;
-  }
-  if (n <= 1) {
-    return;
-  }
-  int blocks;
-  if (length_%n > 0) {
-    blocks = length_/n + 1;
-  } 
-  if (length_%n == 0) {
-    blocks = length_/n;
-  }
-
-  for (int i = 1; i < blocks + 1; i++) {
-    ListNode * tmp_end = head_;
-    ListNode * tmp_start = head_;
-    for (int k = 0; k < i*n - 1; k++) {
-      if (tmp_end->next != NULL) {
-        tmp_end = tmp_end->next;
+  ListNode* beg = head_;
+  ListNode* end = head_;
+  while (true) {
+    if (end == head_) {
+      for (int i = 0; i < n - 1 && end->next; i++) {
+        end = end->next;
+      }
+    } else {
+      for (int i = 0; i < n && end->next; i++) {
+        if (i == 1) {
+          beg = end;
+        }
+        end = end->next;
       }
     }
-    for (int m = 0; m < (i-1)*n; m++) {
-        tmp_start = tmp_start->next;
+    ListNode* temp1 = beg;
+    ListNode* temp2 = end;
+    reverse(temp1, temp2);
+    if (end->prev == nullptr) {
+      head_ = end;
     }
-    reverse(tmp_start, tmp_end);
+    end = beg;
+    if (end->next == nullptr) {
+      tail_ = end;
+      break; 
+    }
   }
 }
 
@@ -325,47 +294,35 @@ void List<T>::mergeWith(List<T> & otherList) {
 template <typename T>
 typename List<T>::ListNode * List<T>::merge(ListNode * first, ListNode* second) {
   /// @todo Graded in MP3.2
-  if (first == NULL) {
-    return second;
-  }
-  if (second == NULL) {
-    return first;
-  }
-  if (second == NULL && first == NULL) {
-    return NULL;
-  }
-  ListNode * head;
-  if (first->data < second->data) {
-    head = first;
-    first = first->next;
-  } else {
-    head = second;
-    second = second->next;
-  }
-  ListNode * current = head;
-  while (first != NULL && second != NULL) {
-    if (first->data < second->data) {
-      current->next = first;
-      first->prev = current;
-      current = first;
-      first = first->next;
+  ListNode* head = nullptr;
+  ListNode* cur1 = first;
+  ListNode* cur2 = second; 
+  (first->data) < (second->data) ? head = first : head = second;
+  while (true) {
+    T value1 = cur1->data;
+    T value2 = cur2->data;
+    ListNode* temp = cur1;
+    if (value1 < value2) {
+      cur1 = cur1->next;
+      if (cur2->prev) {
+        cur2->prev->next = temp;
+      }
+      temp->prev = cur2->prev;
+      temp->next = cur2;
+      cur2->prev = temp;
     } else {
-      current->next = second;
-      second->prev = current;
-      current = second;
-      second = second->next;
+      if (cur2->next) {
+        cur2 = cur2->next;
+      } else {
+        cur2->next = temp;
+        temp->prev = cur2;
+        return head;
+      }
+    }
+    if (cur1 == nullptr) {
+      return head;
     }
   }
-
-  if (first == NULL && second != NULL) {
-    current->next = second;
-    second->prev = current;
-  }
-  if (second == NULL && first != NULL) {
-    current->next = first;
-    first->prev = current;
-  }
-  return head;
 }
 
 /**
@@ -382,13 +339,12 @@ typename List<T>::ListNode * List<T>::merge(ListNode * first, ListNode* second) 
 template <typename T>
 typename List<T>::ListNode* List<T>::mergesort(ListNode * start, int chainLength) {
   /// @todo Graded in MP3.2
-  if (chainLength == 0 || chainLength == 1) {
+  if (chainLength == 1 || chainLength == 0) {
     return start;
-  } else {
-    int length = chainLength/2;
-    ListNode * middle = split(start, length);
-    ListNode * left_part = mergesort(start, length);
-    ListNode * right_part = mergesort(middle, chainLength - length);
-    return merge(left_part, right_part);
   }
+  ListNode* l = start; 
+  ListNode* r = split(start, chainLength / 2);
+  ListNode* left = mergesort(l, chainLength / 2);
+  ListNode* right = mergesort(r, chainLength - chainLength / 2);
+  return merge(left, right); 
 }
